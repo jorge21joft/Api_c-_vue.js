@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-resource/1.5.1/vue-resource.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0-beta.1/axios.min.js"></script>
+    <title>Usuario para consumir Api</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+    
+<div id="App">
+    <div class="container">
+     <div class="row">
+         <h1 class="text-center">Ingrese un nuevo medicamento</h1>
+         <br>
+         <div>
+             <label>Nombre</label>
+             <input type="text" class="form-control" placeholder="nombre del farmaceutico" required v-model="nombre">
+             <label>Precio</label>
+             <input type="number" class="form-control" placeholder="precio del farmaceutico" required v-model="precio">
+             <label>Descripcion</label>
+             <input type="text" class="form-control" placeholder="Escriba una descripcion" required v-model="descripcion">
+
+             <hr>
+
+             <input  v-on:click="guardar" type="button"  value="Guardar" class="btn btn-success" >
+            <button v-if="boton==false" class="btn btn-success" v-on:click.prevent="actualizar(id)">Actualizar</button>
+             <button v-if="boton==false" class="btn btn-danger" v-on:click.prevent="reiniciar()">Cancelar</button>
+         </div>
+
+         <br>
+         <hr>
+             <div>
+
+             <table class="table table-hover table-responsive" style="background-color: rgb(238, 232, 222)">
+                 <thead>
+                     <tr>
+                         <th>Nombre</th>
+                         <th>Precio</th>
+                         <th>Descripcion</th>                      
+                         <th>OPERACIONES</th>
+                     </tr>
+                  
+                 </thead>
+                 <tbody>
+                      <tr v-for=" i in lista">
+                            <td>{{i.nombre}}</td> 
+                            <td>{{i.precio}}</td> 
+                            <td>{{i.descripcion}}</td>                     
+                            <td>                                     
+                                <button class="btn btn-success" v-on:click.prevent="eliminar(i)">Eliminar</button>
+                                <button class="btn btn-warning"  v-on:click.prevent="cargarDatos(i)">Modificar</button>
+                            </td>
+                      </tr>
+                 </tbody>
+                 </table>
+
+             </div>
+
+
+     </div>
+    </div>
+</div>
+
+<script>
+    var cliente = new Vue({
+         el: '#App',
+         data:{
+             lista:[],
+             nombre:null,
+             precio:null,
+             descripcion:null,
+             id_medicamento:null,
+             info:null,
+             boton:true,
+             llenar:{nombre:'', precio:'', descripcion:''},
+             id:null
+           
+         },
+         
+       created:function(){
+           this.cargar();
+
+        },
+        
+         mounted(){
+          axios.get("http://localhost:56342/api/Medicamentos").then(Response => this.info=Response),function success(){
+              this.lista = Response.data;
+          }
+         },
+         methods:{
+            //  metodo para guardar los datos
+            guardar:function(){
+                 var datos={
+                    nombre : this.nombre,
+                    precio : this.precio,
+                    descripcion : this.descripcion
+                 }
+                    
+                 var url="http://localhost:56342/api/Medicamentos"
+
+                 axios.post(url, {
+                    nombre : this.nombre,
+                    precio : this.precio,
+                    descripcion : this.descripcion
+                 }).then(Response => {
+                     this.cargar(),
+                     this.nombre='',
+                     this.precio='',
+                     this.descripcion=''
+                 });            
+
+             },
+            //  metodo para que me recargue la pantalla al realizar una funcion
+             cargar:function(id_medicamento){
+                 var url ="http://localhost:56342/api/Medicamentos";
+                 var datos = url;
+                 axios.get(datos).then(Response=>{this.lista=Response.data})
+             },
+                // metodo para que reinicie 
+             reiniciar:function(){
+                 this.nombre=null;
+                 this.precio=null;
+                 this.descripcion=null;
+                 this.boton = null;
+             },
+            //  funcion para eliminar
+             eliminar:function(i){
+                url="http://localhost:56342/api/Medicamentos/";
+
+                axios.delete(url+i.id_medicamento, {id_medicamento:this.id_medicamento}).then(
+                    Response=>{alert("eliminado"),this.cargar() }).catch(function(error){
+                        console.log(error)
+                    })
+             },
+              //  funcion para cargar los datos en la vista
+              cargarDatos:function(i){
+                
+                var url ="http://localhost:56342/api/Medicamentos/";
+
+                this.boton = false;
+
+
+                this.llenar.nombre = i.nombre;
+                this.llenar.precio= i.precio;
+                this.llenar.descripcion = i.descripcion;
+   
+               axios.get(url + i.id_medicamento).then(Response=>{this.nombre = Response.data.nombre,
+               this.precio = Response.data.precio, this.descripcion = Response.data.descripcion
+               this.id = Response.data.id_medicamento
+               }).catch(function(error){console.log(error)});
+
+              },
+              // metodo para actualizar
+              actualizar:function(id){
+
+                  var url = "http://localhost:56342/api/Medicamentos/";
+
+                  axios.put(url +id , {
+                    id_medicamento: this.id,
+                    nombre : this.nombre,
+                    precio : this.precio,
+                    descripcion : this.descripcion
+                 }).then(
+                      Response=>{
+                          this.boton=true,
+                          this.cargar(),
+                          this.reiniciar()
+                      })
+              }
+
+         }
+
+
+
+    });
+
+
+</script>
+
+</body>
+</html>
